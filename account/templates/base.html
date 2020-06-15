@@ -1,0 +1,76 @@
+{% load static%}
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{%block title%}{%endblock%}</title>
+    <link rel="stylesheet" href="{% static 'css/base.css'%}">
+</head>
+<body>
+    <div id='header'>
+        <span class='logo'>Bookmarks</span>
+        {% if request.user.is_authenticated%}
+        <ul class='menu'>
+           <li {% if section == 'dashboard'%}class='selected' {% endif %}>
+               <a href="{% url 'dashboard'%}">My dashboard</a>
+           </li>
+           <li {% if section == 'images' %}class='selected'{%endif%}>
+               <a href="{% url 'images:list'%}">Images</a>
+           </li>
+           <li {%if section == 'people' %}class='selected'{%endif%}>
+               <a href="#">People</a>
+           </li>
+        </ul>
+        {% endif %}
+
+        <span class='user'>
+        {% if request.user.is_authenticated%}
+        Hello {{request.user.first_name}},
+        <a href="{%url 'logout'%}">Log out</a>
+        {% else %}
+        <a href="{%url 'login'%}">Log in</a>
+        {% endif%}
+        </span>
+    </div>
+    {% if messages %}
+    <ul class="messages">
+    {% for message in messages %}
+    <li class="{{ message.tags }}">
+    {{ message|safe }}
+    <a href="#" class="close">x</a>
+    </li>
+    {% endfor %}
+    </ul>
+    {% endif %}
+    <div id='content'>
+        {% block content %}
+        {% endblock %}
+    </div>
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.4.1/jquery.min.js">
+</script>
+<script src="https://cdn.jsdelivr.net/npm/js-cookie@2.2.1/src/js.cookie.min.js">
+</script>
+<script>
+    var csrftoken = Cookies.get('csrftoken');
+    function csrfSafeMethod(method){
+        //下面这些请求方式不需要csrf保护
+        return (/^(GET|HEAD|OPTIONS|TRACE)$/.test(method))
+    }
+    $.ajaxSetup({
+        beforeSend:function(xhr,settings){
+            //对于所有不安全也不跨域的ajax请求，添加一个csrftoken请求头
+            if(!csrfSafeMethod(settings.type) && !this.crossDomain){
+                xhr.setRequestHeader('X-CSRFToken',csrftoken);
+            }
+        }
+    })
+    $(document).ready(function(){
+     
+        {% block domready %}
+        {% endblock %}
+    });
+</script>
+</body>
+</html>
