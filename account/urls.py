@@ -31,4 +31,13 @@ urlpatterns = [
     path('register/',views.register,name='register'),
     # 修改个人信息
     path('edit/',views.edit,name='edit'),
+    # 所有用户列表
+    path('users',views.user_list,name='user_list'),
+    # 关注其他用户(因为这个路由也会跟下面那个主页路由匹配上，
+    # 所以必须把它放前面)
+    path('users/follow/',views.user_follow,name='user_follow'),
+    # 某个用户的个人主页
+    path('users/<username>',views.user_detail,name='user_detail'),
+    
+
 ]

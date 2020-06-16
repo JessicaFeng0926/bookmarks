@@ -1,12 +1,17 @@
-from django.shortcuts import render
-from django.http import HttpResponse
+from django.shortcuts import render,get_object_or_404
+from django.http import HttpResponse,JsonResponse
 from django.contrib.auth import authenticate,login
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
+from django.contrib.auth.models import User
+from django.views.decorators.http import require_POST
 
 from .forms import LoginForm,UserRegistrationForm,UserEditForm,\
     ProfileEditForm
-from .models import Profile
+from .models import Profile,Contact
+from common.decorators import ajax_required
+from actions.utils import create_action
+from actions.models import Action
 # Create your views here.
 
 def user_login(request):
@@ -36,9 +41,25 @@ def user_login(request):
 
 @login_required
 def dashboard(request):
+    # 取出所有的用户活动
+    actions = Action.objects.exclude(user=request.user)
+    following_ids = request.user.following.values_list('id',
+                                                       flat=True)
+    
+    if following_ids:
+        # 如果这个用户关注了别人，那就只显示他关注的人的活动
+        actions = actions.filter(user_id__in=following_ids)
+    # 只显示前十条信息就可以了
+    # 这里用的select_related方法把一对多关系的表里的数据也一起取出来
+    # 这样后面用的时候就不需要重复访问了
+    # 因为select_related不能处理GenericForeignKey的关系
+    # 所以这里又添加了prefetch_related来处理这种特殊的关系
+    actions = actions.select_related('user','user__profile').\
+        prefetch_related('target')[:10]
     return render(request,
                   'account/dashboard.html',
-                  {'section':'dashboard'})
+                  {'section':'dashboard',
+                   'actions':actions})
 
 def register(request):
     '''注册视图'''
@@ -52,6 +73,8 @@ def register(request):
             new_user.save()
             # 创建一个新的简历对象并绑定一对一关系，保存到数据库
             Profile.objects.create(user=new_user)
+            # 添加用户活动
+            create_action(request.user,'has created an account')
             return render(request,
                           'account/register_done.html',
                           {'new_user':new_user})
@@ -86,6 +109,52 @@ def edit(request):
                   'profile_form':profile_form})
 
 
+@login_required
+def user_list(request):
+    users = User.objects.filter(is_active=True)
+    return render(request,
+                  'account/user/list.html',
+                  {'section':'people',
+                  'users':users})
+
+
+@login_required
+def user_detail(request, username):
+    user = get_object_or_404(User,
+                             username=username,
+                             is_active=True)
+    return render(request,
+                  'account/user/detail.html',
+                  {'section':'people',
+                  'user':user})
+
+
+@ajax_required
+@require_POST
+@login_required
+def user_follow(request):
+    user_id = request.POST.get('id')
+    action = request.POST.get('action')
+    if user_id and action:
+        try:
+            user = User.objects.get(id=user_id)
+            if action == 'follow':
+                Contact.objects.get_or_create(
+                    user_from = request.user,
+                    user_to = user
+                )
+                # 添加用户活动
+                create_action(request.user,'is following',user)
+            else:
+                Contact.objects.filter(
+                    user_from = request.user,
+                    user_to = user
+                ).delete()
+            return JsonResponse({'status':'ok'})
+        except User.DoesNotExist:
+            return JsonResponse({'status':'error'})
+    return JsonResponse({'status':'error'})
+        
 
 
 

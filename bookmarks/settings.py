@@ -11,6 +11,7 @@ https://docs.djangoproject.com/en/3.0/ref/settings/
 """
 
 import os
+from django.urls import reverse_lazy
 
 # Build paths inside the project like this: os.path.join(BASE_DIR, ...)
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -56,6 +57,7 @@ INSTALLED_APPS = [
 
     # 本地应用
     'images.apps.ImagesConfig',
+    'actions.apps.ActionsConfig',
     
 ]
 
@@ -166,4 +168,11 @@ AUTHENTICATION_BACKENDS = {
     'account.authentication.EmailAuthBackend',
     # 支持用google账号登录
     'social_core.backends.google.GoogleOAuth2',
+}
+
+# 覆盖用户默认的absolute_url
+ABSOLUTE_URL_OVERRIDES = {
+    # 这里的user要小写
+    'auth.user': lambda u: reverse_lazy('user_detail',
+                                        args=[u.username])
 }
