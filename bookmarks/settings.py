@@ -176,3 +176,12 @@ ABSOLUTE_URL_OVERRIDES = {
     'auth.user': lambda u: reverse_lazy('user_detail',
                                         args=[u.username])
 }
+
+# 配置redis数据库
+# 这并不是django提供的标准设置，而是我们自定义的
+# 这些值只是保存在这里，使用的时候我们就会import到相应的模块
+REDIS_HOST = 'localhost'
+REDIS_PORT = 6379
+REDIS_DB = 0
+REDIS_USERNAME = 'root'
+REDIS_PASSWORD = 'jessica'

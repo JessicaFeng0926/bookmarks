@@ -13,4 +13,6 @@ urlpatterns = [
     path('like/',views.image_like,name='like'),
     # 显示所有的图片
     path('',views.image_list,name='list'),
+    # 最受欢迎的十张图片
+    path('ranking/',views.image_ranking,name='ranking'),
 ]
